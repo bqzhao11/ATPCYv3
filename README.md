@@ -1,2 +1,2 @@
 # ATPCYv3
-are the parts cut yet mr d
+Self-Driving Robot Project using Faster R-CNN and Arduino.
