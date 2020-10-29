@@ -94,8 +94,8 @@ if __name__ == "__main__":
     model_path = 'C:/Users/ziggy/OneDrive/Desktop/Github/ATPCYv3/faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.pb'
     odapi = DetectorAPI(path_to_ckpt=model_path)
     threshold = 0.7
-    cap = cv2.VideoCapture('C:/Users/ziggy/OneDrive/Desktop/Github/ATPCYv3/IMG_1044.MOV')
-    # cap = cv2.VideoCapture(0)
+    # cap = cv2.VideoCapture('C:/Users/ziggy/OneDrive/Desktop/Github/ATPCYv3/IMG_1044.MOV')
+    cap = cv2.VideoCapture(0)
 
     arduino = serial.Serial('com15', 9600)
 
