@@ -6,6 +6,7 @@ import numpy as np
 import tensorflow as tf
 import cv2
 import time
+import serial
 
 
 class DetectorAPI:
@@ -44,7 +45,7 @@ class DetectorAPI:
             feed_dict={self.image_tensor: image_np_expanded})
         end_time = time.time()
 
-        print("Elapsed Time:", end_time-start_time)
+        # print("Elapsed Time:", end_time-start_time)
 
         im_height, im_width,_ = image.shape
         boxes_list = [None for i in range(boxes.shape[1])]
@@ -60,12 +61,48 @@ class DetectorAPI:
         self.sess.close()
         self.default_graph.close()
 
+def detect_and_command(boxes, scores, classes, img):
+    """
+    Draws detection on the screen and sends commands to the robot
+    Input:
+        boxes: list of bounding box outputs
+    
+    Output:
+        command: command sent to robot
+    """    
+    for i in range(len(boxes)):
+        # Class 1 represents human
+        if classes[i] == 1 and scores[i] > threshold:
+            box = boxes[i]
+            coord1 = (box[1], box[0])
+            coord2 = (box[3], box[2])
+            cv2.rectangle(img,coord1,coord2,(255,0,0),2)
+            if coord2[1] > height_threshold:
+                # stop
+                return 0
+            if coord2[0] <= left_threshold:
+                # turn left
+                return 2
+            if coord1[0] >= right_threshold:
+                # turn right
+                return 3
+            else:
+                # go straight
+                return 1
+
 if __name__ == "__main__":
-    model_path = 'C:/Users/Bryan/Desktop/ATPCY/ATPCYv3/faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.pb'
+    model_path = 'C:/Users/ziggy/OneDrive/Desktop/Github/ATPCYv3/faster_rcnn_inception_v2_coco_2018_01_28/frozen_inference_graph.pb'
     odapi = DetectorAPI(path_to_ckpt=model_path)
     threshold = 0.7
-    # cap = cv2.VideoCapture('C:/Users/Bryan/Desktop/ATPCY/ATPCYv3/IMG_1044.MOV')
-    cap = cv2.VideoCapture(0)
+    cap = cv2.VideoCapture('C:/Users/ziggy/OneDrive/Desktop/Github/ATPCYv3/IMG_1044.MOV')
+    # cap = cv2.VideoCapture(0)
+
+    arduino = serial.Serial('com15', 9600)
+
+    height_threshold = 720 / 2
+
+    left_threshold = 425
+    right_threshold = 851
 
     while True:
         r, img = cap.read()
@@ -73,17 +110,10 @@ if __name__ == "__main__":
 
         boxes, scores, classes, num = odapi.processFrame(img)
 
-        print('boxes', boxes)
-        print('scores', scores)
-        print('classes', classes)
-        print('num', num)
         # Visualization of the results of a detection.
 
-        for i in range(len(boxes)):
-            # Class 1 represents human
-            if classes[i] == 1 and scores[i] > threshold:
-                box = boxes[i]
-                cv2.rectangle(img,(box[1],box[0]),(box[3],box[2]),(255,0,0),2)
+        command = detect_and_command(boxes, scores, classes, img)
+        arduino.write(str(command))
 
         cv2.imshow("preview", img)
         key = cv2.waitKey(1)
